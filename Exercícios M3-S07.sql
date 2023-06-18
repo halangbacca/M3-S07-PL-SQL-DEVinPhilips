@@ -105,7 +105,7 @@ BEGIN
 
 		IF pIdProduto = produto.Id AND produto.Status = 0 THEN
 			RAISE StatusDesativado;
-		ELSIF pIdProduto IN (i.idProduto) THEN
+		ELSIF pIdProduto IN (i.IdProduto) THEN
 			RAISE ProdutoConstraint;
 		ELSE
     		DELETE FROM Produto WHERE Id = pIdProduto;
@@ -125,5 +125,28 @@ EXCEPTION
 END;
 
 CALL SYSTEM.DeletarProduto(1); -- Produto está desativado na tabela!
-CALL SYSTEM.DeletarProduto(5); -- Produto sendo utilizado na tabela ProdutoPreco
+CALL SYSTEM.DeletarProduto(5); -- Produto sendo utilizado na tabela ProdutoPreco!
 CALL SYSTEM.DeletarProduto(11); -- Produto deletado com sucesso
+
+-- Exercício 7
+CREATE OR REPLACE PROCEDURE ListarProdutoPrecoPorIdProduto(pIdProduto NUMBER, pOut OUT VARCHAR2) IS
+	pValorSomado NUMBER;
+   
+BEGIN
+	SELECT SUM(ProdutoPreco.Valor) INTO pValorSomado FROM Produto
+		INNER JOIN ProdutoPreco ON Produto.Id = ProdutoPreco.IdProduto WHERE IdProduto = pIdProduto;
+	pOut := 'Valor somado: ' || pValorSomado;
+
+EXCEPTION
+	WHEN NO_DATA_FOUND THEN
+		DBMS_OUTPUT.PUT_LINE('Produto inexistente!');
+		DBMS_OUTPUT.PUT_LINE('Código do erro: ' || SQLCODE);
+
+END;
+
+DECLARE
+	vOut VARCHAR2(200);
+BEGIN
+	ListarProdutoPrecoPorIdProduto(2, vOut);
+	DBMS_OUTPUT.PUT_LINE(vOut);
+END;
