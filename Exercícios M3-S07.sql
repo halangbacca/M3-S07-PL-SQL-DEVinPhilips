@@ -1,6 +1,9 @@
 SELECT * FROM Produto;
 SELECT * FROM ProdutoPreco;
 
+INSERT INTO Produto(Id, Descricao, Status, Cadastro, QuantidadeEmEstoque)
+	VALUES(11, 'PRODUTO A', 1, TO_DATE('2023-01-01', 'YYYY-MM-DD'), 200);
+
 DROP TABLE ProdutoPreco CASCADE CONSTRAINTS;
 
 -- Exercício 1
@@ -64,7 +67,7 @@ CREATE OR REPLACE PROCEDURE AtualizarProdutoPreco(pIdProduto NUMBER, pValorProdu
    
 BEGIN
 	FOR produto IN (SELECT * FROM ProdutoPreco) LOOP
-		IF produto.Id NOT IN (produto.Id) THEN
+		IF pIdProduto NOT IN (produto.id) THEN
 			RAISE ProdutoInexistente;
 		ELSIF produto.Status = 0 THEN
 			RAISE StatusDesativado;
@@ -83,7 +86,44 @@ EXCEPTION
 	
 END;
 
-CALL SYSTEM.AtualizarProdutoPreco(1, '100,00');
-CALL SYSTEM.AtualizarProdutoPreco(20, '20,00');
+CALL SYSTEM.AtualizarProdutoPreco(1, '100,00'); -- Produto desativado
+CALL SYSTEM.AtualizarProdutoPreco(20, '20,00'); -- Produto inexistente
 
 SELECT * FROM ProdutoPreco;
+
+-- Exercício 6
+CREATE OR REPLACE PROCEDURE DeletarProduto(pIdProduto NUMBER) IS
+	ProdutoConstraint EXCEPTION;
+    StatusDesativado   EXCEPTION;
+   
+    PRAGMA EXCEPTION_INIT(ProdutoConstraint, -20001);
+    PRAGMA EXCEPTION_INIT(StatusDesativado, -20002);
+   
+BEGIN
+	FOR produto IN (SELECT Id, Status FROM Produto) LOOP
+		FOR i IN (SELECT IdProduto FROM ProdutoPreco) LOOP
+
+		IF pIdProduto = produto.Id AND produto.Status = 0 THEN
+			RAISE StatusDesativado;
+		ELSIF pIdProduto IN (i.idProduto) THEN
+			RAISE ProdutoConstraint;
+		ELSE
+    		DELETE FROM Produto WHERE Id = pIdProduto;
+    	END IF;
+    
+    	END LOOP;
+   	END LOOP;
+    	
+EXCEPTION
+	WHEN StatusDesativado THEN
+		DBMS_OUTPUT.PUT_LINE('Produto está desativado na tabela!');
+		DBMS_OUTPUT.PUT_LINE('Código do erro: ' || SQLCODE);
+	WHEN OTHERS THEN
+		DBMS_OUTPUT.PUT_LINE('Produto sendo utilizado na tabela ProdutoPreco!');
+		DBMS_OUTPUT.PUT_LINE('Código do erro: ' || SQLCODE);
+	
+END;
+
+CALL SYSTEM.DeletarProduto(1); -- Produto está desativado na tabela!
+CALL SYSTEM.DeletarProduto(5); -- Produto sendo utilizado na tabela ProdutoPreco
+CALL SYSTEM.DeletarProduto(11); -- Produto deletado com sucesso
